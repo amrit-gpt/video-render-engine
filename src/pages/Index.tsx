@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { VideoUploadZone } from '@/components/VideoUploadZone';
 import { SegmentGrid } from '@/components/SegmentGrid';
 import { PerformanceDashboard } from '@/components/PerformanceDashboard';
-import { VideoComparison } from '@/components/VideoComparison';
+import { SegmentDownload } from '@/components/SegmentDownload';
 import { 
   VideoJob, 
   ProcessingMode, 
@@ -137,15 +137,6 @@ const Index = () => {
     }
     setJob(null);
     setElapsedTime(0);
-  };
-
-  const handleDownload = () => {
-    if (job?.processedUrl) {
-      const a = document.createElement('a');
-      a.href = job.processedUrl;
-      a.download = `grayscale_${job.originalFile.name}`;
-      a.click();
-    }
   };
 
   return (
@@ -283,13 +274,12 @@ const Index = () => {
                   />
                 </div>
 
-                {/* Video Comparison */}
-                {job.status === 'completed' && job.processedUrl && (
+                {/* Segment Download */}
+                {job.status === 'completed' && (
                   <div className="p-6 rounded-lg bg-card border border-border">
-                    <VideoComparison
-                      originalUrl={job.originalUrl}
-                      processedUrl={job.processedUrl}
-                      onDownload={handleDownload}
+                    <SegmentDownload
+                      originalFile={job.originalFile}
+                      segments={job.segments}
                     />
                   </div>
                 )}
