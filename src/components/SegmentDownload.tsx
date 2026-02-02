@@ -38,6 +38,9 @@ export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps
           video.onseeked = () => res();
         });
 
+        // Apply grayscale filter
+        ctx.filter = 'grayscale(100%)';
+
         // Set up MediaRecorder
         const stream = canvas.captureStream(30);
         const mediaRecorder = new MediaRecorder(stream, {
