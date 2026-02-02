@@ -4,6 +4,7 @@ import { VideoUploadZone } from '@/components/VideoUploadZone';
 import { SegmentGrid } from '@/components/SegmentGrid';
 import { PerformanceDashboard } from '@/components/PerformanceDashboard';
 import { SegmentDownload } from '@/components/SegmentDownload';
+import { SegmentVideoGrid } from '@/components/SegmentVideoGrid';
 import { 
   VideoJob, 
   ProcessingMode, 
@@ -273,6 +274,16 @@ const Index = () => {
                     isProcessing={isProcessing}
                   />
                 </div>
+
+                {/* Video Segments Grid */}
+                {job.status === 'completed' && (
+                  <div className="p-6 rounded-lg bg-card border border-border">
+                    <SegmentVideoGrid
+                      originalFile={job.originalFile}
+                      segments={job.segments}
+                    />
+                  </div>
+                )}
 
                 {/* Segment Download */}
                 {job.status === 'completed' && (
