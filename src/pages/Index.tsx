@@ -171,9 +171,7 @@ const Index = () => {
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Real-Time Distributed</span>
-            <br />
-            <span className="text-foreground">Video Rendering</span>
+            <span className="gradient-text">TEAM IGNITERS</span>
           </h1>
           
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -313,7 +311,7 @@ const Index = () => {
           className="text-center mt-16 pt-8 border-t border-border"
         >
           <p className="text-sm text-muted-foreground">
-            <span className="font-mono">Real-Time Distributed Video Rendering</span>
+            <span className="font-mono">TEAM IGNITERS</span>
             <br />
             <span className="text-xs">Demonstrating parallel processing performance improvements</span>
           </p>
