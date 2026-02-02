@@ -68,8 +68,7 @@ export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps
             return;
           }
           
-          // Apply grayscale filter
-          ctx.filter = 'grayscale(100%)';
+          // Draw frame in original color
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           requestAnimationFrame(drawFrame);
         };
@@ -128,7 +127,7 @@ export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps
           duration: seg.endTime - seg.startTime,
         })),
         processedAt: new Date().toISOString(),
-        filter: 'Grayscale',
+        filter: 'Original Color',
         team: 'TEAM IGNITERS'
       };
 
@@ -180,7 +179,7 @@ export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps
           <div className="flex-1">
             <p className="font-medium text-foreground">{originalFile.name}</p>
             <p className="text-sm text-muted-foreground">
-              {segments.length} video segments (10 seconds each, grayscale filtered)
+              {segments.length} video segments (10 seconds each)
             </p>
           </div>
         </div>
@@ -238,7 +237,7 @@ export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Each segment is a separate .webm video file with grayscale filter applied
+        Each segment is a separate .webm video file in original color
       </p>
     </motion.div>
   );
