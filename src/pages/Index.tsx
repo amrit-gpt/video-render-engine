@@ -5,6 +5,7 @@ import { SegmentGrid } from '@/components/SegmentGrid';
 import { PerformanceDashboard } from '@/components/PerformanceDashboard';
 import { SegmentDownload } from '@/components/SegmentDownload';
 import { SegmentVideoGrid } from '@/components/SegmentVideoGrid';
+import { BeforeVideoSection } from '@/components/BeforeVideoSection';
 import { 
   VideoJob, 
   ProcessingMode, 
@@ -275,7 +276,17 @@ const Index = () => {
                   />
                 </div>
 
-                {/* Video Segments Grid */}
+                {/* Before Section - Original Video */}
+                {job.status === 'completed' && (
+                  <div className="p-6 rounded-lg bg-card border border-border">
+                    <BeforeVideoSection
+                      videoUrl={job.originalUrl}
+                      fileName={job.originalFile.name}
+                    />
+                  </div>
+                )}
+
+                {/* After Section - Grayscale Video Segments */}
                 {job.status === 'completed' && (
                   <div className="p-6 rounded-lg bg-card border border-border">
                     <SegmentVideoGrid
