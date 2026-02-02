@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { Download, FileVideo, Package } from 'lucide-react';
+import { Download, FileVideo, Package, Loader2 } from 'lucide-react';
 import JSZip from 'jszip';
 import { VideoSegment } from '@/types/video';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface SegmentDownloadProps {
   originalFile: File;
@@ -11,99 +11,151 @@ interface SegmentDownloadProps {
 
 export const SegmentDownload = ({ originalFile, segments }: SegmentDownloadProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
+
+  const captureSegmentAsVideo = async (
+    videoUrl: string,
+    startTime: number,
+    endTime: number,
+    segmentIndex: number
+  ): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.muted = true;
+      video.playsInline = true;
+
+      video.onloadedmetadata = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(video.videoWidth, 1280);
+        canvas.height = Math.min(video.videoHeight, 720);
+        const ctx = canvas.getContext('2d')!;
+
+        // Seek to start
+        video.currentTime = startTime;
+
+        await new Promise<void>((res) => {
+          video.onseeked = () => res();
+        });
+
+        // Set up MediaRecorder
+        const stream = canvas.captureStream(30);
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=vp9',
+          videoBitsPerSecond: 2500000,
+        });
+
+        const chunks: Blob[] = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          resolve(blob);
+        };
+
+        mediaRecorder.onerror = () => reject(new Error('Recording failed'));
+
+        // Start recording and playing
+        mediaRecorder.start();
+        video.play();
+
+        const drawFrame = () => {
+          if (video.currentTime >= endTime || video.ended) {
+            video.pause();
+            mediaRecorder.stop();
+            return;
+          }
+          
+          // Apply grayscale filter
+          ctx.filter = 'grayscale(100%)';
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          requestAnimationFrame(drawFrame);
+        };
+
+        drawFrame();
+      };
+
+      video.onerror = () => reject(new Error('Failed to load video'));
+    });
+  };
 
   const handleDownloadZip = async () => {
     setIsGenerating(true);
-    
+    setProgress({ current: 0, total: segments.length, status: 'Preparing...' });
+
     try {
       const zip = new JSZip();
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      
       const videoUrl = URL.createObjectURL(originalFile);
-      video.src = videoUrl;
-      
-      await new Promise<void>((resolve) => {
-        video.onloadedmetadata = () => resolve();
-      });
 
-      const duration = video.duration;
-      const segmentDuration = 10;
-      const segmentCount = Math.ceil(duration / segmentDuration);
+      // Capture each segment as a video
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        setProgress({ 
+          current: i + 1, 
+          total: segments.length, 
+          status: `Recording segment ${i + 1}...` 
+        });
+
+        try {
+          const videoBlob = await captureSegmentAsVideo(
+            videoUrl,
+            seg.startTime,
+            seg.endTime,
+            i
+          );
+          
+          const filename = `segment_${String(i + 1).padStart(3, '0')}_${seg.startTime.toFixed(0)}s-${seg.endTime.toFixed(0)}s.webm`;
+          zip.file(filename, videoBlob);
+        } catch (err) {
+          console.error(`Failed to capture segment ${i + 1}:`, err);
+        }
+      }
+
+      // Add manifest
+      setProgress({ current: segments.length, total: segments.length, status: 'Creating manifest...' });
       
-      // Create a manifest file
       const manifest = {
         originalFile: originalFile.name,
-        totalDuration: duration,
-        segmentDuration: segmentDuration,
-        segmentCount: segmentCount,
+        segmentCount: segments.length,
+        segmentDuration: 10,
         segments: segments.map((seg, i) => ({
           id: i + 1,
+          filename: `segment_${String(i + 1).padStart(3, '0')}_${seg.startTime.toFixed(0)}s-${seg.endTime.toFixed(0)}s.webm`,
           startTime: seg.startTime,
           endTime: seg.endTime,
           duration: seg.endTime - seg.startTime,
-          filename: `segment_${String(i + 1).padStart(3, '0')}.txt`
         })),
         processedAt: new Date().toISOString(),
-        note: "This demo simulates video splitting. In production, actual video segments would be included."
+        filter: 'Grayscale',
+        team: 'TEAM IGNITERS'
       };
-      
-      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-      
-      // Add segment info files (simulation - in production these would be actual video files)
-      segments.forEach((seg, i) => {
-        const segmentInfo = `Segment ${i + 1}
------------------
-Start Time: ${seg.startTime.toFixed(2)}s
-End Time: ${seg.endTime.toFixed(2)}s
-Duration: ${(seg.endTime - seg.startTime).toFixed(2)}s
-Processing Time: ${seg.processingTime ? `${seg.processingTime}ms` : 'N/A'}
-Status: ${seg.status}
 
-Note: This is a simulation file. 
-In a production environment with FFmpeg backend, 
-this would be the actual processed video segment.`;
-        
-        zip.file(`segment_${String(i + 1).padStart(3, '0')}.txt`, segmentInfo);
+      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+
+      // Generate and download
+      setProgress({ current: segments.length, total: segments.length, status: 'Compressing ZIP...' });
+      
+      const blob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
       });
       
-      // Add a readme
-      const readme = `TEAM IGNITERS - Video Segment Export
-=====================================
-
-This ZIP contains the split segments from your video processing demo.
-
-Original File: ${originalFile.name}
-Total Duration: ${duration.toFixed(2)} seconds
-Number of Segments: ${segmentCount}
-Segment Length: ${segmentDuration} seconds each
-
-Files Included:
-- manifest.json: Complete processing metadata
-- segment_XXX.txt: Info for each segment
-
-NOTE: This is a frontend simulation. With a real FFmpeg backend,
-each segment_XXX.txt would be replaced with actual video files
-(segment_XXX.mp4) containing the grayscale-processed video.
-
-Processed with ❤️ by TEAM IGNITERS`;
-      
-      zip.file('README.txt', readme);
-      
-      // Generate and download
-      const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${originalFile.name.replace(/\.[^/.]+$/, '')}_segments.zip`;
       a.click();
-      
+
       URL.revokeObjectURL(url);
       URL.revokeObjectURL(videoUrl);
     } catch (error) {
       console.error('Failed to generate ZIP:', error);
     } finally {
       setIsGenerating(false);
+      setProgress({ current: 0, total: 0, status: '' });
     }
   };
 
@@ -116,7 +168,7 @@ Processed with ❤️ by TEAM IGNITERS`;
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />
-          Download Segments
+          Download Video Segments
         </h3>
       </div>
 
@@ -128,25 +180,43 @@ Processed with ❤️ by TEAM IGNITERS`;
           <div className="flex-1">
             <p className="font-medium text-foreground">{originalFile.name}</p>
             <p className="text-sm text-muted-foreground">
-              Split into {segments.length} segments of 10 seconds each
+              {segments.length} video segments (10 seconds each, grayscale filtered)
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {segments.slice(0, 6).map((seg, i) => (
+        {/* Segment preview list */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-48 overflow-y-auto">
+          {segments.map((seg, i) => (
             <div key={seg.id} className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm">
-              <div className="w-2 h-2 rounded-full bg-success" />
-              <span className="text-muted-foreground">Segment {i + 1}</span>
-              <span className="text-foreground ml-auto">{(seg.endTime - seg.startTime).toFixed(1)}s</span>
+              <FileVideo className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-foreground font-medium">Segment {i + 1}</span>
+                <span className="text-muted-foreground text-xs block">
+                  {seg.startTime.toFixed(0)}s — {seg.endTime.toFixed(0)}s
+                </span>
+              </div>
             </div>
           ))}
-          {segments.length > 6 && (
-            <div className="flex items-center justify-center p-2 rounded bg-muted/50 text-sm text-muted-foreground">
-              +{segments.length - 6} more segments
-            </div>
-          )}
         </div>
+
+        {/* Progress indicator */}
+        {isGenerating && (
+          <div className="mb-4 p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-muted-foreground">{progress.status}</span>
+              <span className="text-foreground font-medium">
+                {progress.current} / {progress.total}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         <button
           onClick={handleDownloadZip}
@@ -155,8 +225,8 @@ Processed with ❤️ by TEAM IGNITERS`;
         >
           {isGenerating ? (
             <>
-              <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Generating ZIP...
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Recording Segments...
             </>
           ) : (
             <>
@@ -168,7 +238,7 @@ Processed with ❤️ by TEAM IGNITERS`;
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        ZIP includes manifest, segment info, and processing metadata
+        Each segment is a separate .webm video file with grayscale filter applied
       </p>
     </motion.div>
   );
