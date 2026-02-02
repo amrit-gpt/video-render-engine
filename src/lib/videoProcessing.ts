@@ -1,4 +1,4 @@
-import { VideoJob, VideoSegment, ProcessingStats, ProcessingMode, VideoFilter } from '@/types/video';
+import { VideoSegment, ProcessingStats, ProcessingMode } from '@/types/video';
 
 const SEGMENT_DURATION = 10; // seconds
 const SIMULATED_PROCESSING_BASE = 800; // ms per segment base time
@@ -40,18 +40,15 @@ export const getVideoDuration = (file: File): Promise<number> => {
 
 const simulateSegmentProcessing = (
   segment: VideoSegment,
-  filter: VideoFilter,
   onProgress: (progress: number) => void
 ): Promise<number> => {
   return new Promise((resolve) => {
-    const baseTime = SIMULATED_PROCESSING_BASE;
-    const filterMultiplier = filter === 'edge' ? 1.5 : filter === 'blur' ? 1.3 : 1;
     const segmentDuration = segment.endTime - segment.startTime;
-    const totalTime = baseTime * filterMultiplier * (segmentDuration / 10);
+    const baseTime = SIMULATED_PROCESSING_BASE * (segmentDuration / 10);
     
-    // Add some randomness
+    // Add some randomness for realism
     const variance = Math.random() * 200 - 100;
-    const finalTime = Math.max(500, totalTime + variance);
+    const finalTime = Math.max(500, baseTime + variance);
     
     const startTime = Date.now();
     const steps = 20;
@@ -71,7 +68,6 @@ const simulateSegmentProcessing = (
 
 export const processSequentially = async (
   segments: VideoSegment[],
-  filter: VideoFilter,
   onSegmentUpdate: (segment: VideoSegment) => void
 ): Promise<number[]> => {
   const times: number[] = [];
@@ -79,7 +75,7 @@ export const processSequentially = async (
   for (const segment of segments) {
     onSegmentUpdate({ ...segment, status: 'processing', progress: 0 });
     
-    const time = await simulateSegmentProcessing(segment, filter, (progress) => {
+    const time = await simulateSegmentProcessing(segment, (progress) => {
       onSegmentUpdate({ ...segment, status: 'processing', progress });
     });
     
@@ -92,16 +88,15 @@ export const processSequentially = async (
 
 export const processParallel = async (
   segments: VideoSegment[],
-  filter: VideoFilter,
   onSegmentUpdate: (segment: VideoSegment) => void
 ): Promise<number[]> => {
   const promises = segments.map(async (segment) => {
     // Stagger start slightly to simulate realistic parallel behavior
-    await new Promise(r => setTimeout(r, segment.id * 50));
+    await new Promise(r => setTimeout(r, segment.id * 30));
     
     onSegmentUpdate({ ...segment, status: 'processing', progress: 0 });
     
-    const time = await simulateSegmentProcessing(segment, filter, (progress) => {
+    const time = await simulateSegmentProcessing(segment, (progress) => {
       onSegmentUpdate({ ...segment, status: 'processing', progress });
     });
     
@@ -114,25 +109,22 @@ export const processParallel = async (
 
 export const calculateStats = (
   segmentTimes: number[],
-  mode: ProcessingMode,
-  sequentialTime?: number
+  mode: ProcessingMode
 ): ProcessingStats => {
-  const totalTime = mode === 'sequential' 
-    ? segmentTimes.reduce((a, b) => a + b, 0)
-    : Math.max(...segmentTimes) + 500; // Parallel takes max + merge overhead
+  const sequentialTime = segmentTimes.reduce((a, b) => a + b, 0);
+  const parallelTime = Math.max(...segmentTimes) + 300; // Max segment + merge overhead
   
-  const estimatedSequential = sequentialTime || segmentTimes.reduce((a, b) => a + b, 0);
-  const speedupFactor = mode === 'parallel' 
-    ? estimatedSequential / totalTime 
-    : 1;
+  const totalTime = mode === 'sequential' ? sequentialTime : parallelTime;
+  const speedupFactor = sequentialTime / parallelTime;
   
   return {
     totalTime,
     perSegmentTimes: segmentTimes,
     cpuCores: CPU_CORES,
     speedupFactor: Math.round(speedupFactor * 100) / 100,
-    sequentialTime: mode === 'sequential' ? totalTime : estimatedSequential,
-    parallelTime: mode === 'parallel' ? totalTime : undefined,
+    sequentialTime,
+    parallelTime,
+    segmentCount: segmentTimes.length,
   };
 };
 

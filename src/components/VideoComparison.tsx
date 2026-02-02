@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, Download, SplitSquareHorizontal } from 'lucide-react';
+import { Play, Pause, Download } from 'lucide-react';
 
 interface VideoComparisonProps {
   originalUrl: string;
@@ -16,7 +16,6 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Sync both videos
     const syncVideos = () => {
       if (originalRef.current && processedRef.current) {
         processedRef.current.currentTime = originalRef.current.currentTime;
@@ -55,22 +54,19 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
       className="space-y-4"
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold flex items-center gap-2">
-          <SplitSquareHorizontal className="w-5 h-5 text-primary" />
-          Before vs After Comparison
-        </h3>
+        <h3 className="font-semibold text-foreground">Before vs After</h3>
         <button
           onClick={onDownload}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
         >
           <Download className="w-4 h-4" />
-          Download Result
+          Download
         </button>
       </div>
 
       <div
         ref={containerRef}
-        className="relative w-full aspect-video rounded-xl overflow-hidden bg-black cursor-col-resize neon-border-cyan"
+        className="relative w-full aspect-video rounded-lg overflow-hidden bg-black cursor-col-resize border border-border"
         onMouseMove={handleMouseMove}
       >
         {/* Original Video (Left) */}
@@ -100,37 +96,37 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
 
         {/* Divider line */}
         <div
-          className="absolute top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_hsl(var(--primary))]"
+          className="absolute top-0 bottom-0 w-0.5 bg-primary"
           style={{ left: `${splitPosition}%`, transform: 'translateX(-50%)' }}
         >
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <SplitSquareHorizontal className="w-4 h-4 text-primary-foreground" />
+            <span className="text-primary-foreground text-xs font-bold">⟷</span>
           </div>
         </div>
 
         {/* Labels */}
-        <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-sm font-medium">
+        <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/70 text-xs font-medium text-white">
           Original
         </div>
-        <div className="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-primary/80 backdrop-blur-sm text-sm font-medium text-primary-foreground">
-          Processed
+        <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary text-xs font-medium text-primary-foreground">
+          Grayscale
         </div>
 
         {/* Play/Pause button */}
         <button
           onClick={togglePlay}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/80 transition-colors"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 p-2 rounded-full bg-black/70 hover:bg-black/90 transition-colors"
         >
           {isPlaying ? (
-            <Pause className="w-6 h-6" />
+            <Pause className="w-5 h-5 text-white" />
           ) : (
-            <Play className="w-6 h-6" />
+            <Play className="w-5 h-5 text-white" />
           )}
         </button>
       </div>
 
-      <p className="text-sm text-muted-foreground text-center">
-        Drag the slider to compare • Click to play/pause
+      <p className="text-xs text-muted-foreground text-center">
+        Drag slider to compare • Click center to play/pause
       </p>
     </motion.div>
   );

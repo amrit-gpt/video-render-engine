@@ -15,7 +15,6 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
 
   const validateFile = (file: File): boolean => {
-    // Check file type
     const isValidType = SUPPORTED_FORMATS.some(format => 
       file.type === format || file.name.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|heic|hevc|m4v)$/)
     );
@@ -25,7 +24,6 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
       return false;
     }
     
-    // Check file size (max 500MB for demo)
     if (file.size > 500 * 1024 * 1024) {
       setError('File too large. Maximum size is 500MB.');
       return false;
@@ -82,10 +80,9 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
             <label
               className={`
                 relative flex flex-col items-center justify-center w-full h-64 
-                rounded-xl border-2 border-dashed cursor-pointer
-                transition-all duration-300 overflow-hidden
+                rounded-lg border-2 border-dashed cursor-pointer transition-all
                 ${isDragging 
-                  ? 'border-primary bg-primary/10 neon-border-cyan' 
+                  ? 'border-primary bg-primary/10' 
                   : 'border-border hover:border-primary/50 hover:bg-muted/30'
                 }
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -94,9 +91,6 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
             >
-              {/* Background grid pattern */}
-              <div className="absolute inset-0 bg-grid-pattern bg-[size:20px_20px] opacity-20" />
-              
               <input
                 type="file"
                 className="hidden"
@@ -106,15 +100,15 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
               />
               
               <motion.div
-                className="relative z-10 flex flex-col items-center gap-4"
+                className="flex flex-col items-center gap-4"
                 animate={isDragging ? { scale: 1.05 } : { scale: 1 }}
               >
                 <div className={`p-4 rounded-full ${isDragging ? 'bg-primary/20' : 'bg-muted'}`}>
-                  <Upload className={`w-8 h-8 ${isDragging ? 'text-primary glow-text-cyan' : 'text-muted-foreground'}`} />
+                  <Upload className={`w-8 h-8 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
                 </div>
                 
                 <div className="text-center">
-                  <p className="text-lg font-semibold">
+                  <p className="text-lg font-semibold text-foreground">
                     {isDragging ? 'Drop your video here' : 'Drag & drop your video'}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -123,7 +117,7 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
                 </div>
                 
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
-                  {['MP4', 'MOV', 'AVI', 'MKV', 'WebM', 'HEVC'].map((format) => (
+                  {['MP4', 'MOV', 'AVI', 'MKV', 'WebM'].map((format) => (
                     <span
                       key={format}
                       className="px-2 py-0.5 text-xs font-mono rounded bg-muted text-muted-foreground"
@@ -141,7 +135,7 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-card rounded-xl p-4 neon-border-cyan"
+            className="rounded-lg p-4 bg-card border border-border"
           >
             <div className="flex items-start gap-4">
               <div className="relative w-48 h-32 rounded-lg overflow-hidden bg-black">
@@ -159,7 +153,7 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
               </div>
               
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold truncate">{preview.file.name}</h4>
+                <h4 className="font-semibold text-foreground truncate">{preview.file.name}</h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   {formatFileSize(preview.file.size)}
                 </p>
@@ -170,7 +164,7 @@ export const VideoUploadZone = ({ onFileSelect, disabled }: VideoUploadZoneProps
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={handleConfirm}
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
                   >
                     Process Video
                   </button>

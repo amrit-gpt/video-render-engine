@@ -16,7 +16,7 @@ export const SegmentGrid = ({ segments, isProcessing }: SegmentGridProps) => {
       case 'processing':
         return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
       case 'completed':
-        return <CheckCircle2 className="w-4 h-4 text-success" />;
+        return <CheckCircle2 className="w-4 h-4 text-primary" />;
       case 'error':
         return <AlertCircle className="w-4 h-4 text-destructive" />;
     }
@@ -25,22 +25,24 @@ export const SegmentGrid = ({ segments, isProcessing }: SegmentGridProps) => {
   const getStatusColor = (status: VideoSegment['status']) => {
     switch (status) {
       case 'pending':
-        return 'border-border bg-muted/20';
+        return 'border-border bg-muted/30';
       case 'processing':
-        return 'border-primary bg-primary/10 neon-border-cyan segment-processing';
+        return 'border-primary bg-primary/10';
       case 'completed':
-        return 'border-success bg-success/10';
+        return 'border-primary/50 bg-primary/5';
       case 'error':
         return 'border-destructive bg-destructive/10';
     }
   };
 
+  const completedCount = segments.filter(s => s.status === 'completed').length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Segment Processing</h3>
+        <h3 className="font-semibold text-foreground">Segment Processing</h3>
         <span className="text-sm text-muted-foreground">
-          {segments.filter(s => s.status === 'completed').length} / {segments.length} completed
+          {completedCount} / {segments.length} completed
         </span>
       </div>
       
@@ -48,9 +50,9 @@ export const SegmentGrid = ({ segments, isProcessing }: SegmentGridProps) => {
         {segments.map((segment, index) => (
           <motion.div
             key={segment.id}
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: index * 0.03 }}
             className={`
               relative p-3 rounded-lg border transition-all
               ${getStatusColor(segment.status)}
@@ -73,12 +75,12 @@ export const SegmentGrid = ({ segments, isProcessing }: SegmentGridProps) => {
               {getStatusIcon(segment.status)}
             </div>
             
-            <div className="text-sm font-medium">
+            <div className="text-sm font-medium text-foreground">
               {segment.startTime}s - {segment.endTime}s
             </div>
             
             {segment.status === 'processing' && (
-              <div className="mt-1 text-xs text-primary">
+              <div className="mt-1 text-xs text-primary font-medium">
                 {Math.round(segment.progress)}%
               </div>
             )}
