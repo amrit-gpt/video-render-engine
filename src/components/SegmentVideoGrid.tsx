@@ -73,7 +73,7 @@ export const SegmentVideoGrid = ({ originalFile, segments }: SegmentVideoGridPro
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
           <FileVideo className="w-5 h-5 text-primary" />
-          Video Segments ({segments.length} × 10s)
+          After — Grayscale Segments ({segments.length} × 10s)
         </h3>
         <span className="text-sm text-muted-foreground">
           Click to preview each segment
@@ -94,7 +94,7 @@ export const SegmentVideoGrid = ({ originalFile, segments }: SegmentVideoGridPro
               <video
                 ref={(el) => { videoRefs.current[segment.id] = el; }}
                 src={videoUrl}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover grayscale"
                 muted
                 playsInline
                 onEnded={() => handleVideoEnded(segment.id)}
