@@ -1,13 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VideoUploadZone } from '@/components/VideoUploadZone';
-import { ProcessingControls } from '@/components/ProcessingControls';
 import { SegmentGrid } from '@/components/SegmentGrid';
 import { PerformanceDashboard } from '@/components/PerformanceDashboard';
 import { VideoComparison } from '@/components/VideoComparison';
 import { 
   VideoJob, 
-  VideoFilter, 
   ProcessingMode, 
   VideoSegment 
 } from '@/types/video';
@@ -19,11 +17,10 @@ import {
   processParallel,
   calculateStats,
 } from '@/lib/videoProcessing';
-import { Cpu, Zap, GitBranch, Play, RotateCcw } from 'lucide-react';
+import { Cpu, Layers, Zap, RotateCcw } from 'lucide-react';
 
 const Index = () => {
   const [job, setJob] = useState<VideoJob | null>(null);
-  const [filter, setFilter] = useState<VideoFilter>('grayscale');
   const [mode, setMode] = useState<ProcessingMode>('parallel');
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,7 +51,6 @@ const Index = () => {
         id: generateJobId(),
         originalFile: file,
         originalUrl: URL.createObjectURL(file),
-        filter,
         mode,
         segments,
         status: 'idle',
@@ -78,18 +74,19 @@ const Index = () => {
     });
   }, []);
 
-  const startProcessing = async () => {
+  const startProcessing = async (selectedMode: ProcessingMode) => {
     if (!job) return;
 
-    setJob(prev => prev ? { ...prev, status: 'converting', mode, filter } : prev);
+    setMode(selectedMode);
+    setJob(prev => prev ? { ...prev, status: 'converting', mode: selectedMode } : prev);
     setElapsedTime(0);
 
     // Simulate conversion delay
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 800));
     setJob(prev => prev ? { ...prev, status: 'splitting' } : prev);
     
     // Simulate splitting delay
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
     setJob(prev => prev ? { ...prev, status: 'processing' } : prev);
 
     // Reset segments
@@ -109,23 +106,23 @@ const Index = () => {
     try {
       let segmentTimes: number[];
       
-      if (mode === 'sequential') {
-        segmentTimes = await processSequentially(job.segments, filter, updateSegment);
+      if (selectedMode === 'sequential') {
+        segmentTimes = await processSequentially(job.segments, updateSegment);
       } else {
-        segmentTimes = await processParallel(job.segments, filter, updateSegment);
+        segmentTimes = await processParallel(job.segments, updateSegment);
       }
 
       // Simulate merging
       setJob(prev => prev ? { ...prev, status: 'merging' } : prev);
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
 
       // Calculate stats
-      const stats = calculateStats(segmentTimes, mode);
+      const stats = calculateStats(segmentTimes, selectedMode);
       
       setJob(prev => prev ? {
         ...prev,
         status: 'completed',
-        processedUrl: prev.originalUrl, // In a real app, this would be the processed video
+        processedUrl: prev.originalUrl,
         stats,
       } : prev);
     } catch (error) {
@@ -143,62 +140,44 @@ const Index = () => {
   };
 
   const handleDownload = () => {
-    // In a real app, this would download the processed video
     if (job?.processedUrl) {
       const a = document.createElement('a');
       a.href = job.processedUrl;
-      a.download = `processed_${job.originalFile.name}`;
+      a.download = `grayscale_${job.originalFile.name}`;
       a.click();
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Background effects */}
-      <div className="fixed inset-0 bg-grid-pattern bg-[size:40px_40px] opacity-10 pointer-events-none" />
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
-
-      <div className="relative container py-8 max-w-6xl">
+      <div className="container py-8 max-w-5xl">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-sm text-primary mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-sm text-primary mb-4">
             <Cpu className="w-4 h-4" />
-            Hackathon Project
+            Hackathon Demo
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">TEAM IGNITERS</span>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 text-foreground">
+            TEAM IGNITERS
           </h1>
           
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Experience parallel processing power. Upload a video, apply filters, and watch as multiple CPU cores 
-            process segments simultaneously for dramatic speedups.
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Grayscale Render Performance Demo — Compare sequential vs parallel video processing
           </p>
 
-          {/* Feature badges */}
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            {[
-              { icon: Zap, label: 'Multi-core Processing' },
-              { icon: GitBranch, label: 'Segment Parallelization' },
-              { icon: Cpu, label: 'Real-time Metrics' },
-            ].map(({ icon: Icon, label }) => (
-              <div
-                key={label}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 text-sm"
-              >
-                <Icon className="w-4 h-4 text-primary" />
-                {label}
-              </div>
-            ))}
+          <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
+            <Cpu className="w-4 h-4" />
+            <span>{navigator.hardwareConcurrency || 4} CPU cores detected</span>
           </div>
         </motion.header>
 
         {/* Main content */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           <AnimatePresence mode="wait">
             {!job ? (
               <motion.div
@@ -215,47 +194,63 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="space-y-8"
+                className="space-y-6"
               >
-                {/* Controls */}
-                <div className="glass-card rounded-xl p-6 border border-border">
-                  <ProcessingControls
-                    filter={filter}
-                    mode={mode}
-                    onFilterChange={setFilter}
-                    onModeChange={setMode}
-                    disabled={isProcessing || job.status === 'completed'}
-                  />
-
-                  <div className="flex gap-3 mt-6">
-                    {job.status === 'idle' && (
-                      <button
-                        onClick={startProcessing}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors pulse-glow"
-                      >
-                        <Play className="w-5 h-5" />
-                        Start Processing
-                      </button>
-                    )}
-                    
-                    {job.status === 'completed' && (
-                      <button
-                        onClick={startProcessing}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-                      >
-                        <RotateCcw className="w-5 h-5" />
-                        Reprocess
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={handleReset}
-                      disabled={isProcessing}
-                      className="px-6 py-3 rounded-lg bg-muted text-muted-foreground font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
-                    >
-                      New Video
-                    </button>
+                {/* Filter label and mode buttons */}
+                <div className="p-6 rounded-lg bg-card border border-border">
+                  <div className="mb-4">
+                    <p className="text-sm text-muted-foreground mb-1">Filter Applied</p>
+                    <p className="text-lg font-semibold text-foreground">Grayscale Render (Performance Demo)</p>
                   </div>
+
+                  {/* Mode buttons */}
+                  {job.status === 'idle' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => startProcessing('sequential')}
+                        className="flex flex-col items-center gap-2 p-6 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all"
+                      >
+                        <Layers className="w-8 h-8 text-muted-foreground" />
+                        <span className="font-semibold text-foreground">⚙️ Sequential</span>
+                        <span className="text-xs text-muted-foreground">One segment at a time</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => startProcessing('parallel')}
+                        className="flex flex-col items-center gap-2 p-6 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all"
+                      >
+                        <Zap className="w-8 h-8 text-primary" />
+                        <span className="font-semibold text-foreground">🚀 Parallel</span>
+                        <span className="text-xs text-muted-foreground">All cores simultaneously</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Reprocess / New Video buttons */}
+                  {job.status === 'completed' && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => startProcessing('sequential')}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 transition-colors"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Run Sequential
+                      </button>
+                      <button
+                        onClick={() => startProcessing('parallel')}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Run Parallel
+                      </button>
+                      <button
+                        onClick={handleReset}
+                        className="px-6 py-3 rounded-lg bg-muted text-muted-foreground font-medium hover:bg-muted/80 transition-colors"
+                      >
+                        New Video
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Status indicator */}
@@ -266,12 +261,12 @@ const Index = () => {
                     className="flex items-center justify-center gap-3 py-3 rounded-lg bg-primary/10 border border-primary/30"
                   >
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-sm font-medium capitalize">{job.status}...</span>
+                    <span className="text-sm font-medium text-foreground capitalize">{job.status}...</span>
                   </motion.div>
                 )}
 
                 {/* Segment Grid */}
-                <div className="glass-card rounded-xl p-6 border border-border">
+                <div className="p-6 rounded-lg bg-card border border-border">
                   <SegmentGrid
                     segments={job.segments}
                     isProcessing={isProcessing}
@@ -279,7 +274,7 @@ const Index = () => {
                 </div>
 
                 {/* Performance Dashboard */}
-                <div className="glass-card rounded-xl p-6 border border-border">
+                <div className="p-6 rounded-lg bg-card border border-border">
                   <PerformanceDashboard
                     stats={job.stats || null}
                     mode={job.mode}
@@ -290,7 +285,7 @@ const Index = () => {
 
                 {/* Video Comparison */}
                 {job.status === 'completed' && job.processedUrl && (
-                  <div className="glass-card rounded-xl p-6 border border-border">
+                  <div className="p-6 rounded-lg bg-card border border-border">
                     <VideoComparison
                       originalUrl={job.originalUrl}
                       processedUrl={job.processedUrl}
@@ -307,18 +302,12 @@ const Index = () => {
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center mt-16 pt-8 border-t border-border"
+          transition={{ delay: 0.3 }}
+          className="text-center mt-12 pt-6 border-t border-border"
         >
           <p className="text-sm text-muted-foreground">
-            <span className="font-mono">TEAM IGNITERS</span>
-            <br />
-            <span className="text-xs">Demonstrating parallel processing performance improvements</span>
+            TEAM IGNITERS — Parallel Processing Performance Demo
           </p>
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-            <Cpu className="w-3 h-3" />
-            <span>{navigator.hardwareConcurrency || 4} CPU cores detected</span>
-          </div>
         </motion.footer>
       </div>
     </div>

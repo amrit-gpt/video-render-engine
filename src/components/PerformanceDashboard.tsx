@@ -1,8 +1,7 @@
 import { motion } from 'framer-motion';
 import { ProcessingStats, ProcessingMode } from '@/types/video';
 import { formatTime } from '@/lib/videoProcessing';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
-import { Cpu, Clock, Zap, TrendingUp } from 'lucide-react';
+import { Clock, Cpu, Zap, TrendingUp } from 'lucide-react';
 
 interface PerformanceDashboardProps {
   stats: ProcessingStats | null;
@@ -17,184 +16,146 @@ export const PerformanceDashboard = ({
   elapsedTime,
   isProcessing,
 }: PerformanceDashboardProps) => {
-  const chartData = stats?.perSegmentTimes.map((time, index) => ({
-    name: `Seg ${index + 1}`,
-    time: time,
-  })) || [];
-
-  const StatCard = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    subValue,
-    color = 'primary'
-  }: { 
-    icon: React.ComponentType<{ className?: string }>; 
-    label: string; 
-    value: string;
-    subValue?: string;
-    color?: 'primary' | 'secondary' | 'success' | 'warning';
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`
-        glass-card rounded-xl p-4 border
-        ${color === 'primary' ? 'border-primary/30' : ''}
-        ${color === 'secondary' ? 'border-secondary/30' : ''}
-        ${color === 'success' ? 'border-success/30' : ''}
-        ${color === 'warning' ? 'border-warning/30' : ''}
-      `}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`
-          p-2 rounded-lg
-          ${color === 'primary' ? 'bg-primary/20 text-primary' : ''}
-          ${color === 'secondary' ? 'bg-secondary/20 text-secondary' : ''}
-          ${color === 'success' ? 'bg-success/20 text-success' : ''}
-          ${color === 'warning' ? 'bg-warning/20 text-warning' : ''}
-        `}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-xl font-bold font-mono">{value}</p>
-          {subValue && (
-            <p className="text-xs text-muted-foreground">{subValue}</p>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Performance Dashboard
-        </h3>
-        {isProcessing && (
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Processing...
+      <h3 className="font-semibold text-foreground">Performance Metrics</h3>
+
+      {/* Live timer during processing */}
+      {isProcessing && (
+        <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-primary animate-pulse" />
+            <div>
+              <p className="text-sm text-muted-foreground">Processing ({mode})</p>
+              <p className="text-2xl font-bold text-primary font-mono">
+                {formatTime(elapsedTime)}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Clock}
-          label="Total Time"
-          value={formatTime(stats?.totalTime || elapsedTime)}
-          color="primary"
-        />
-        <StatCard
-          icon={Cpu}
-          label="CPU Cores"
-          value={String(stats?.cpuCores || navigator.hardwareConcurrency || 4)}
-          subValue={mode === 'parallel' ? 'All utilized' : '1 active'}
-          color="secondary"
-        />
-        <StatCard
-          icon={Zap}
-          label="Speedup Factor"
-          value={stats?.speedupFactor ? `${stats.speedupFactor}x` : '—'}
-          subValue={mode === 'parallel' ? 'vs sequential' : 'Baseline'}
-          color="success"
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Mode"
-          value={mode === 'parallel' ? 'Parallel' : 'Sequential'}
-          subValue={mode === 'parallel' ? 'Multi-threaded' : 'Single-threaded'}
-          color="warning"
-        />
-      </div>
-
-      {/* Chart */}
-      {chartData.length > 0 && (
+      {/* Stats after completion */}
+      {stats && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-xl p-4 border border-border"
+          className="space-y-4"
         >
-          <h4 className="font-medium mb-4">Per-Segment Processing Time</h4>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <YAxis
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                  tickFormatter={(value) => `${value}ms`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  formatter={(value: number) => [`${value}ms`, 'Time']}
-                />
-                <Bar dataKey="time" radius={[4, 4, 0, 0]}>
-                  {chartData.map((_, index) => (
-                    <Cell
-                      key={index}
-                      fill={`hsl(${175 + index * 10}, 70%, 50%)`}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Speedup highlight */}
+          <div className="p-6 rounded-lg bg-primary/10 border border-primary/30 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Zap className="w-6 h-6 text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">Speedup Factor</span>
+            </div>
+            <p className="text-5xl font-bold text-primary">
+              {stats.speedupFactor.toFixed(1)}×
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Faster with parallel processing
+            </p>
+          </div>
+
+          {/* Metrics grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <MetricCard
+              icon={<Clock className="w-4 h-4" />}
+              label="Sequential Time"
+              value={formatTime(stats.sequentialTime)}
+            />
+            <MetricCard
+              icon={<TrendingUp className="w-4 h-4" />}
+              label="Parallel Time"
+              value={formatTime(stats.parallelTime)}
+              highlight
+            />
+            <MetricCard
+              icon={<Cpu className="w-4 h-4" />}
+              label="CPU Cores"
+              value={stats.cpuCores.toString()}
+            />
+            <MetricCard
+              icon={<Zap className="w-4 h-4" />}
+              label="Segments"
+              value={stats.segmentCount.toString()}
+            />
+          </div>
+
+          {/* Comparison bar */}
+          <div className="p-4 rounded-lg bg-muted/30 border border-border">
+            <p className="text-sm font-medium text-foreground mb-3">Sequential vs Parallel</p>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-muted-foreground">Sequential</span>
+                  <span className="font-mono">{formatTime(stats.sequentialTime)}</span>
+                </div>
+                <div className="h-3 bg-muted rounded overflow-hidden">
+                  <div className="h-full bg-muted-foreground rounded" style={{ width: '100%' }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-muted-foreground">Parallel</span>
+                  <span className="font-mono text-primary">{formatTime(stats.parallelTime)}</span>
+                </div>
+                <div className="h-3 bg-muted rounded overflow-hidden">
+                  <motion.div
+                    className="h-full bg-primary rounded"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(stats.parallelTime / stats.sequentialTime) * 100}%` }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Per-segment times */}
+          <div className="p-4 rounded-lg bg-muted/30 border border-border">
+            <p className="text-sm font-medium text-foreground mb-3">Per-Segment Times</p>
+            <div className="flex flex-wrap gap-2">
+              {stats.perSegmentTimes.map((time, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-1 rounded bg-secondary text-xs font-mono text-secondary-foreground"
+                >
+                  #{i + 1}: {formatTime(time)}
+                </span>
+              ))}
+            </div>
           </div>
         </motion.div>
       )}
 
-      {/* Comparison */}
-      {stats?.sequentialTime && stats?.parallelTime && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-xl p-4 border border-success/30"
-        >
-          <h4 className="font-medium mb-3">Sequential vs Parallel Comparison</h4>
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Sequential</span>
-                <span className="font-mono">{formatTime(stats.sequentialTime)}</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-muted-foreground rounded-full"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Parallel</span>
-                <span className="font-mono text-success">{formatTime(stats.parallelTime)}</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-success rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(stats.parallelTime / stats.sequentialTime) * 100}%` }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+      {/* Empty state */}
+      {!stats && !isProcessing && (
+        <div className="p-8 text-center text-muted-foreground">
+          <p>Process a video to see performance metrics</p>
+        </div>
       )}
     </div>
   );
 };
+
+const MetricCard = ({
+  icon,
+  label,
+  value,
+  highlight = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) => (
+  <div className={`p-4 rounded-lg border ${highlight ? 'bg-primary/5 border-primary/30' : 'bg-muted/30 border-border'}`}>
+    <div className={`flex items-center gap-2 mb-1 ${highlight ? 'text-primary' : 'text-muted-foreground'}`}>
+      {icon}
+      <span className="text-xs">{label}</span>
+    </div>
+    <p className={`text-xl font-bold font-mono ${highlight ? 'text-primary' : 'text-foreground'}`}>
+      {value}
+    </p>
+  </div>
+);
