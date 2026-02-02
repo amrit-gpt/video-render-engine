@@ -109,7 +109,7 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
           Original
         </div>
         <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary text-xs font-medium text-primary-foreground">
-          Grayscale
+          Processed
         </div>
 
         {/* Play/Pause button */}
