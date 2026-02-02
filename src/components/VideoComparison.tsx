@@ -69,7 +69,7 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
         className="relative w-full aspect-video rounded-lg overflow-hidden bg-black cursor-col-resize border border-border"
         onMouseMove={handleMouseMove}
       >
-        {/* Original Video (Left) */}
+        {/* Original Video (Left) - Full Color */}
         <video
           ref={originalRef}
           src={originalUrl}
@@ -79,7 +79,7 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
           playsInline
         />
 
-        {/* Processed Video (Right) with clip */}
+        {/* Processed Video (Right) with clip - Grayscale Filter */}
         <div
           className="absolute inset-0 overflow-hidden"
           style={{ clipPath: `inset(0 0 0 ${splitPosition}%)` }}
@@ -87,7 +87,7 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
           <video
             ref={processedRef}
             src={processedUrl}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover grayscale"
             muted
             loop
             playsInline
@@ -106,10 +106,10 @@ export const VideoComparison = ({ originalUrl, processedUrl, onDownload }: Video
 
         {/* Labels */}
         <div className="absolute top-3 left-3 px-2 py-1 rounded bg-black/70 text-xs font-medium text-white">
-          Original
+          Before (Original)
         </div>
         <div className="absolute top-3 right-3 px-2 py-1 rounded bg-primary text-xs font-medium text-primary-foreground">
-          Processed
+          After (Grayscale)
         </div>
 
         {/* Play/Pause button */}
