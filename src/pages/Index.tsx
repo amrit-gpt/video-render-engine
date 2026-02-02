@@ -159,7 +159,7 @@ const Index = () => {
           </h1>
           
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Grayscale Render Performance Demo — Compare sequential vs parallel video processing
+            Video Segmentation Performance Demo — Compare sequential vs parallel video processing
           </p>
 
           <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
@@ -191,8 +191,8 @@ const Index = () => {
                 {/* Filter label and mode buttons */}
                 <div className="p-6 rounded-lg bg-card border border-border">
                   <div className="mb-4">
-                    <p className="text-sm text-muted-foreground mb-1">Filter Applied</p>
-                    <p className="text-lg font-semibold text-foreground">Grayscale Render (Performance Demo)</p>
+                    <p className="text-sm text-muted-foreground mb-1">Processing Mode</p>
+                    <p className="text-lg font-semibold text-foreground">Video Segmentation (Performance Demo)</p>
                   </div>
 
                   {/* Mode buttons */}
